@@ -45,6 +45,21 @@ df_cargo_partido_mun = tabela_vv_cargo_partido_municipio(cargo, partido, uf)
 df_ze = df_cand_ze.merge(df_cargo_ze, how = 'outer', on=['NM_MUNICIPIO', 'NR_ZONA']).merge(df_cargo_partido_ze, how = 'outer', on=['NM_MUNICIPIO', 'NR_ZONA']).sort_values('votos_candidato', ascending=False)
 df_mun = df_cand_mun.merge(df_cargo_mun, how = 'outer', on='NM_MUNICIPIO').merge(df_cargo_partido_mun, how = 'outer', on='NM_MUNICIPIO').sort_values('votos_candidato', ascending=False)
 
+total_votos_candidato = df_ze['votos_candidato'].sum()
+total_votos_validos = df_ze['votos_validos'].sum()
+
+df_ze['votos válidos ainda não alcançados na ZE'] = df_ze['votos_validos'] - df_ze['votos_candidato']
+df_ze['pct votos do candidato'] = df_ze['votos_candidato'] / total_votos_candidato
+df_ze['pct votos válidos da ZE'] = df_ze['votos_candidato'] / df_ze['votos_validos']
+df_ze['pct votos do partido na ZE'] = df_ze['votos_candidato'] / df_ze['votos_partido']
+df_ze['pct votos válidos ainda não alcançados na ZE'] = df_ze['votos válidos ainda não alcançados na ZE'] / total_votos_validos
+
+df_mun['votos válidos ainda não alcançados no Município'] = df_mun['votos_validos'] - df_mun['votos_candidato']
+df_mun['pct votos do candidato'] = df_mun['votos_candidato'] / total_votos_candidato
+df_mun['pct votos válidos do Município'] = df_mun['votos_candidato'] / df_mun['votos_validos']
+df_mun['pct votos do partido no Município'] = df_mun['votos_candidato'] / df_mun['votos_partido']
+df_mun['pct votos válidos ainda não alcançados no Municípo'] = df_mun['votos válidos ainda não alcançados no Município'] / total_votos_validos
+
 writer = pd.ExcelWriter(PATH_OUT + candidato + ' - Análise.xlsx')
 
 df_ze.to_excel(writer, 'ze')
