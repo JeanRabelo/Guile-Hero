@@ -36,6 +36,24 @@ def getVotosDeLegenda():
                         return [votos_de_legenda, total_do_partido]
         return [votos_de_legenda, total_do_partido]
 
+def getEleitores():
+    eleitores_aptos = None
+    comparecimento = None
+    eleitores_faltosos = None
+    tag_aux_1 = soup.find('th', text='Eleitores aptos')
+    tag_aux_2 = soup.find('th', text='Eleitores faltosos')
+    if tag_aux_1 is None:
+        pass
+    elif len(tag_aux_1.parent.contents)>=8:
+        eleitores_aptos = int(tag_aux_1.parent.contents[3].contents[0])
+        comparecimento = int(tag_aux_1.parent.contents[7].contents[0])
+    if tag_aux_2 is None:
+        pass
+    elif len(tag_aux_2.parent.contents)>=4:
+        eleitores_faltosos = int(soup.find('th', text='Eleitores faltosos').parent.contents[3].contents[0])
+    return [eleitores_aptos, comparecimento, eleitores_faltosos]
+
+
 def getInfos():
     soup = BS(driver.page_source, 'html.parser')
     infos = []
@@ -47,10 +65,18 @@ def getInfos():
     infos.append(getVotosCandidato())
     infos.append(getVotosDeLegenda()[0])
     infos.append(getVotosDeLegenda()[1])
-    infos.append(int(soup.find('th', text='Eleitores aptos').parent.contents[3].contents[0]))
-    infos.append(int(soup.find('th', text='Eleitores aptos').parent.contents[7].contents[0]))
-    infos.append(int(soup.find('th', text='Eleitores faltosos').parent.contents[3].contents[0]))
+    infos.append(getEleitores()[0])
+    infos.append(getEleitores()[1])
+    infos.append(getEleitores()[2])
     return infos
+
+def get_file(path_info):
+    info_csv = []
+    with open(path_info, 'r', newline='', encoding='cp1252') as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=';')
+        for row in spamreader:
+            info_csv.append(row)
+        return info_csv
 
 def save_file(info_csv):
     with open(f"info_csv_until_{i}.csv", 'w', newline='', encoding='cp1252') as f:
@@ -64,10 +90,13 @@ nome_candidato = 'DIRCEU TEN CATEN'
 nome_partido = 'PT'
 cargo = 'Deputado Estadual'
 grupo_de_impressao = 70
+ultimo_numero_salvo = 2100
 
-
-info_csv = []
-info_csv.append(['i','nome_candidato', 'municipio', 'zona', 'secao', 'votos_candidato', 'votos_de_legenda', 'total_do_partido', 'eleitores_aptos', 'comparecimento', 'eleitores_faltosos'])
+if ultimo_numero_salvo == 0:
+    info_csv = []
+    info_csv.append(['i','nome_candidato', 'municipio', 'zona', 'secao', 'votos_candidato', 'votos_de_legenda', 'total_do_partido', 'eleitores_aptos', 'comparecimento', 'eleitores_faltosos'])
+else:
+    info_csv = get_file(f"info_csv_until_{ultimo_numero_salvo}.csv")
 
 i = 1
 
@@ -94,13 +123,16 @@ for mun in soup.find('select', {'id':'P1_MUN'}).findAll('option')[1:]:
         soup = BS(driver.page_source, 'html.parser')
         for secao in soup.find('select', {'id':'P1_SECAO'}).findAll('option')[1:]:
             Select(driver.find_element(By.ID, "P1_SECAO")).select_by_visible_text(secao.contents[0])
-            driver.find_element(By.XPATH, "//button[@id='PESQUISAR']/span[2]").click()
-            sleep(3)
-            soup = BS(driver.page_source, 'html.parser')
-            infos = getInfos()
-            info_csv.append(infos)
-            if i % grupo_de_impressao == 0:
-                save_file(info_csv)
+            if i > ultimo_numero_salvo:
+                driver.find_element(By.XPATH, "//button[@id='PESQUISAR']/span[2]").click()
+                sleep(3)
+                soup = BS(driver.page_source, 'html.parser')
+                infos = getInfos()
+                info_csv.append(infos)
+                if i % grupo_de_impressao == 0:
+                    save_file(info_csv)
+            else:
+                print(f"{i} skipped")
             i+=1
 
 save_file(info_csv)
